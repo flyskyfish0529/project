@@ -1,15 +1,16 @@
 import configparser
+from pathlib import Path
 
 import pymysql
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
 # 加载环境变量
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent / '.env')
 
 # 读取配置文件
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read(Path(__file__).resolve().parent / 'config.ini', encoding='utf-8')
 
 
 db_config = {

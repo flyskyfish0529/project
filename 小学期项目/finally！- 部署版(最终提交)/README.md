@@ -48,23 +48,11 @@
 
 ### 3. 环境配置
 
-#### 单设备部署（前后端在同一台设备）：
 ```bash
 pip install -r requirements.txt
 ```
 
-#### 分离部署：
-前端设备：
-```bash
-cd frontend
-pip install -r requirements.txt
-```
 
-后端设备：
-```bash
-cd backend
-pip install -r requirements.txt
-```
 
 ### 4. 启动服务
 

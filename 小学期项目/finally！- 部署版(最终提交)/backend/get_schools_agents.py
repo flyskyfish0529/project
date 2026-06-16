@@ -1,12 +1,13 @@
 import json
 import time
+from pathlib import Path
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
 import MBTIseek
 import chat_agent
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 chat_service = chat_agent.DeepSeekChatService()
 

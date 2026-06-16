@@ -1,16 +1,16 @@
 import pymysql
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from langchain.chains import LLMMathChain
 from pymysql import Error
 from pydantic import BaseModel
 import configparser
+from pathlib import Path
 
 import get_schools_agents
 from MBTIseek import CareerRecommender
 
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read(Path(__file__).resolve().parent / 'config.ini', encoding='utf-8')
 
 app = FastAPI()
 

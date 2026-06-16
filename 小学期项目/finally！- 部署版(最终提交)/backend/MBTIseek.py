@@ -1,9 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy import text
 import configparser
+from pathlib import Path
 
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read(Path(__file__).resolve().parent / 'config.ini', encoding='utf-8')
 if 'database' not in config:
     raise ValueError("配置文件缺少 [database] 部分")
 

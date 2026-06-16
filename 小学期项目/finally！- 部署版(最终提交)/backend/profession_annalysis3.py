@@ -6,13 +6,14 @@ import os
 from collections import defaultdict
 from dotenv import load_dotenv
 import jieba
+from pathlib import Path
 
 # 加载环境变量
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 # 配置DeepSeek模型
 chat_model_deepseek = ChatOpenAI(
-    model="deepseek-chat",
+    model="deepseek-v4-pro",
     base_url=os.environ["OPENAI_DEEPSEEK_BASE_URL_FREE"],
     api_key=SecretStr(os.environ["OPENAI_DEEPSEEK_APIKEY_FREE"]),
     temperature=0.3,

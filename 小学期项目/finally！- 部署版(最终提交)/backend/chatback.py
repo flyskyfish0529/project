@@ -8,6 +8,7 @@ from langchain_core.messages import HumanMessage,AIMessage
 import json
 import os
 import uvicorn
+from pathlib import Path
 from typing import AsyncGenerator
 import get_schools_agents
 import logging
@@ -15,7 +16,7 @@ import logging
 # 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-dotenv.load_dotenv()
+dotenv.load_dotenv(Path(__file__).resolve().parent / ".env")
 app = FastAPI(title="DeepSeek Streaming API", version="1.0.0")
 
 # 配置CORS
@@ -39,7 +40,7 @@ class DeepSeekChatService:
     def __init__(self):
         try:
             self.chat_model = ChatOpenAI(
-                model="deepseek-chat",
+                model="deepseek-v4-pro",
                 base_url=os.environ["DEEPSEEK_BASE_URL"],
                 api_key=SecretStr(os.environ["DEEPSEEK_API_KEY"]),
                 temperature=0.3,

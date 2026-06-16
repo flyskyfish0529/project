@@ -1,4 +1,5 @@
 import configparser
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read(Path(__file__).resolve().parent / 'config.ini', encoding='utf-8')
 
 frontward = config['IP']['frontward']#   前端地址
 origins = [
