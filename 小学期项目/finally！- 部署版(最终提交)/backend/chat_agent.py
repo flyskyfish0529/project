@@ -89,6 +89,61 @@ USER_PROMPT = """
 """.strip()
 
 
+ONLY_FULL_GROUP_BY_RULES = """
+The MySQL server enables ONLY_FULL_GROUP_BY. Generated SQL must obey all of
+these rules:
+- Read the exact table and column names from the supplied table_info. Never
+  invent a column.
+- Join tianjin_enrollment_plan to tianjin_college_admission with both the
+  normalized group code and school name:
+  TRIM(e.院校专业组代码) = TRIM(a.院校专业组代码)
+  AND TRIM(e.院校名称) = TRIM(a.院校名称).
+  The admission group-code data contains trailing spaces, so a bare equality
+  comparison can return no rows under utf8mb4_0900_ai_ci.
+- Use the actual 科目要求 values listed in the supplied database context.
+  Combined subjects use 加, for example 物理加化学, not commas.
+- In every SELECT that contains GROUP BY, each selected expression must either
+  be aggregated or appear in that same GROUP BY clause.
+- Never select e.计划数 as a bare non-grouped column. For 招生人数, prefer
+  SUM(CAST(REPLACE(e.计划数, ',', '') AS UNSIGNED)). If the query intentionally
+  groups by each enrollment-plan row, include e.计划数 in GROUP BY instead.
+- Apply the same rule inside every CTE and subquery, not only the outer query.
+- Do not use ANY_VALUE to hide an invalid grouping design.
+""".strip()
+
+SQL_REPAIR_PROMPT = """
+Repair the SQL below using the supplied real database schema and data-value
+notes. Preserve the requested result columns and recommendation logic. Fix the
+reported execution or empty-result problem without removing legitimate score,
+major, or subject constraints. Return only the complete corrected SELECT/WITH
+SQL.
+
+Database schema:
+{table_info}
+
+MySQL error:
+{error}
+
+Invalid SQL:
+{sql}
+""".strip()
+
+
+def get_database_context() -> str:
+    subject_values = db.run(
+        """
+        SELECT DISTINCT `科目要求`
+        FROM tianjin_enrollment_plan
+        ORDER BY `科目要求`
+        """
+    )
+    return (
+        f"{db.get_table_info()}\n\n"
+        f"Actual distinct values of tianjin_enrollment_plan.科目要求:\n"
+        f"{subject_values}"
+    )
+
+
 def ask_llm(message: str) -> str:
     global secondary_llm
     if secondary_llm is None:
@@ -237,24 +292,48 @@ class DeepSeekChatService:
         )
         self.prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", SYSTEM_PROMPT),
+                ("system", f"{SYSTEM_PROMPT}\n\n{ONLY_FULL_GROUP_BY_RULES}"),
                 ("human", USER_PROMPT),
             ]
         )
         self.sql_chain = self.prompt | self.llm
+        self.repair_chain = (
+            ChatPromptTemplate.from_messages(
+                [
+                    ("system", ONLY_FULL_GROUP_BY_RULES),
+                    ("human", SQL_REPAIR_PROMPT),
+                ]
+            )
+            | self.llm
+        )
 
     async def get_sql(self, message: str, score: float = 0.0) -> str:
         response = await self.sql_chain.ainvoke(
             {
                 "message": message,
                 "score": score,
-                "table_info": db.get_table_info(),
+                "table_info": get_database_context(),
             }
         )
         output = response.content if hasattr(response, "content") else str(response)
         sql = validate_readonly_sql(fix_sql_parentheses(extract_pure_sql(output)))
         print(sql)
         return sql
+
+    async def repair_sql(self, sql: str, error: Exception) -> str:
+        response = await self.repair_chain.ainvoke(
+            {
+                "sql": sql,
+                "error": str(error),
+                "table_info": get_database_context(),
+            }
+        )
+        output = response.content if hasattr(response, "content") else str(response)
+        repaired_sql = validate_readonly_sql(
+            fix_sql_parentheses(extract_pure_sql(output))
+        )
+        print(repaired_sql)
+        return repaired_sql
 
     async def chat(self, message: str, score: float):
         sql = await self.get_sql(message=message, score=score)
@@ -270,8 +349,25 @@ class DeepSeekChatService:
         connection = pymysql.connect(**db_config)
         try:
             with connection.cursor() as cursor:
-                cursor.execute(sql)
+                try:
+                    cursor.execute(sql)
+                except pymysql.err.OperationalError as error:
+                    if not error.args or error.args[0] != 1055:
+                        raise
+                    sql = await self.repair_sql(sql, error)
+                    cursor.execute(sql)
                 results = cursor.fetchall()
+                if not results:
+                    sql = await self.repair_sql(
+                        sql,
+                        ValueError(
+                            "Query returned zero rows. Check TRIM on both join "
+                            "keys and use the actual 科目要求 values from the "
+                            "database context."
+                        ),
+                    )
+                    cursor.execute(sql)
+                    results = cursor.fetchall()
         finally:
             connection.close()
 
