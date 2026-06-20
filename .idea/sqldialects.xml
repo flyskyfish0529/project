@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="SqlDialectMappings">
-    <file url="file://$PROJECT_DIR$/小学期项目/finally！- 部署版(最终提交)/database/backend_database/mbti.sql" dialect="MySQL" />
-    <file url="file://$PROJECT_DIR$/小学期项目/finally！- 部署版(最终提交)/database/backend_database/tianjin.sql" dialect="MySQL" />
-    <file url="file://$PROJECT_DIR$/小学期项目/finally！- 部署版(最终提交)/database/backend_database/users.sql" dialect="MySQL" />
-    <file url="file://$PROJECT_DIR$/小学期项目/finally！- 部署版(最终提交)/database/frontend_database/一分一段表.sql" dialect="MySQL" />
-  </component>
-</project>
