@@ -69,6 +69,7 @@ def seek(mbti_type):
 async def smart_recommend():
     subject_list = subjects.split(",")
     print(subject_list)
+    
     # chat_agent already owns the SQL system/user prompt templates. Only pass
     # recommendation inputs here so the same SQL instructions are not nested
     # into USER_PROMPT a second time.
