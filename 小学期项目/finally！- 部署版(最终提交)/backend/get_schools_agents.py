@@ -178,12 +178,32 @@ async def smart_recommend():
 
 """
 
+    # chat_agent already owns the SQL system/user prompt templates. Only pass
+    # recommendation inputs here so the same SQL instructions are not nested
+    # into USER_PROMPT a second time.
+    recommendation_request = json.dumps(
+        {
+            "live_city": live_city,
+            "score": score,
+            "rank": rank,
+            "want_major": want_major,
+            "unwant_major": unwant_major,
+            "hobby": hobby,
+            "future_goal": future_goal,
+            "strategy": strategy,
+            "subjects": subject_list,
+            "mbti": MBTI,
+            "mbti_career": MBTI_career,
+        },
+        ensure_ascii=False,
+    )
+
     global result
-    result = await chat_service.chat(prompt,score)
+    result = await chat_service.chat(recommendation_request, score)
     print(result)
-    json= {"result":result,"time":time.time()}
-    print(json)
-    return json
+    response_payload = {"result": result, "time": time.time()}
+    print(response_payload)
+    return response_payload
 
 async def return_result():
     return result
